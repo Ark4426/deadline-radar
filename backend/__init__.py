@@ -12,6 +12,7 @@ from werkzeug.exceptions import HTTPException
 from backend.auth import auth_bp
 from backend.config import Config
 from backend.database import init_app as init_database
+from backend.risk import risk_bp
 from backend.security import init_security
 from backend.tasks import tasks_bp
 
@@ -46,6 +47,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     init_security(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(risk_bp)
 
     @app.get("/api/health")
     def health():

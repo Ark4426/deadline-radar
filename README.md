@@ -54,3 +54,13 @@ SQLite, created from `backend/schema.sql` on boot:
 | `settings` | Keyword lists, category weights, and UI preferences |
 
 Schema version is tracked with `PRAGMA user_version`; `flask --app app init-db` creates or upgrades the local database.
+
+## Risk engine
+
+`POST /api/risk/preview` accepts a task draft and returns:
+
+- a 0–100 risk score and band (`critical`, `high`, `watch`, `low`)
+- the exact signals that moved the score, with point contributions
+- a 2–4 step rescue plan with time estimates
+
+The deterministic baseline weighs deadline proximity, effort vs. spare capacity, urgency language, category weight, queue pressure, task age, and the user's category track record. An optional scikit-learn model can later blend into the same explanation contract.
