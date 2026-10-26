@@ -10,6 +10,7 @@ from flask import Flask, jsonify, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from backend.config import Config
+from backend.database import init_app as init_database
 
 APP_VERSION = "0.1.0"
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -37,6 +38,8 @@ def create_app(test_config: dict | None = None) -> Flask:
         app.config["MODEL_PATH"] = str(
             Path(__file__).resolve().parent / "risk_engine" / "artifacts" / "risk_model.joblib"
         )
+
+    init_database(app)
 
     @app.get("/api/health")
     def health():

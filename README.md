@@ -41,3 +41,16 @@ Open `http://127.0.0.1:5000`.
 ## Product idea
 
 DeadlineRadar scores each open task for **missed-deadline risk** instead of only assigning a priority label. It explains the score and suggests a small rescue plan.
+
+## Data model
+
+SQLite, created from `backend/schema.sql` on boot:
+
+| Table | Purpose |
+|---|---|
+| `users` | Account, password hash, timezone |
+| `tasks` | Per-user tasks, due date, effort, risk snapshot |
+| `risk_predictions` | Audit trail of every risk preview and its signals |
+| `settings` | Keyword lists, category weights, and UI preferences |
+
+Schema version is tracked with `PRAGMA user_version`; `flask --app app init-db` creates or upgrades the local database.
