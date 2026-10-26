@@ -8,6 +8,7 @@ from datetime import date
 from flask import Blueprint, jsonify, request
 
 from backend.database import get_db, utc_now
+from backend.risk_engine import compute_risk, load_context
 from backend.security import current_user, login_required
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/api/tasks")
@@ -48,6 +49,35 @@ def serialize_task(row, today: date | None = None) -> dict:
         }
     )
     return task
+
+
+def refresh_risk(user_id: int) -> None:
+    """Re-score every pending task so stored risk and auto priority track today's date."""
+    # ponytail: rescans all pending tasks (2 queries each) per call; cache by date if lists get huge
+    db = get_db()
+    today = date.today()
+    rows = db.execute(
+        "SELECT * FROM tasks WHERE user_id = ? AND status = 'pending'", (user_id,)
+    ).fetchall()
+    for row in rows:
+        context = load_context(db, user_id, row["category"], exclude_task_id=row["id"], today=today)
+        assessment = compute_risk(dict(row), context, today=today)
+        db.execute(
+            """
+            UPDATE tasks
+            SET risk_score = ?, risk_band = ?, predicted_priority = ?,
+                priority = CASE WHEN priority_source = 'auto' THEN ? ELSE priority END
+            WHERE id = ?
+            """,
+            (
+                assessment["risk_score"],
+                assessment["risk_band"],
+                assessment["priority"],
+                assessment["priority"],
+                row["id"],
+            ),
+        )
+    db.commit()
 
 
 def get_owned_task(task_id: int, user_id: int):
@@ -202,6 +232,7 @@ def list_tasks():
     if order_by is None:
         return jsonify({"error": "Invalid sort option."}), 400
 
+    refresh_risk(user["id"])
     where = " AND ".join(filters)
     db = get_db()
     total = db.execute(f"SELECT COUNT(*) FROM tasks WHERE {where}", params).fetchone()[0]
@@ -263,6 +294,7 @@ def create_task():
         ),
     )
     db.commit()
+    refresh_risk(user["id"])
     row = get_owned_task(cursor.lastrowid, user["id"])
     return jsonify({"task": serialize_task(row)}), 201
 
@@ -295,7 +327,9 @@ def update_task(task_id: int):
     updates = dict(clean)
     if "priority" in updates:
         if updates["priority"] is None:
+            # null hands priority back to the risk engine (refresh_risk sets it below)
             updates.pop("priority")
+            updates["priority_source"] = "auto"
         else:
             updates["priority_source"] = "manual"
 
@@ -310,6 +344,7 @@ def update_task(task_id: int):
         [*updates.values(), task_id, user["id"]],
     )
     db.commit()
+    refresh_risk(user["id"])
 
     updated = get_owned_task(task_id, user["id"])
     return jsonify({"task": serialize_task(updated)})
@@ -336,6 +371,7 @@ def toggle_complete(task_id: int):
         (status, utc_now() if completed else None, utc_now(), task_id),
     )
     db.commit()
+    refresh_risk(user["id"])
     updated = get_owned_task(task_id, user["id"])
     return jsonify({"task": serialize_task(updated)})
 

@@ -1,6 +1,10 @@
 """Development entry point for DeadlineRadar."""
 
-from backend import create_app
+from flask.cli import load_dotenv
+
+load_dotenv()  # read .env before backend.config snapshots os.environ
+
+from backend import create_app  # noqa: E402
 
 app = create_app()
 

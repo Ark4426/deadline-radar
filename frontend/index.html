@@ -8,10 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%238cffe4'/%3E%3Ccircle cx='11' cy='5' r='2' fill='%23ffbd6b'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <main class="boot-screen">
+  <!-- Signed-out view -->
+  <main id="auth-view" class="auth-view" hidden>
     <div class="radar-mark" aria-hidden="true">
       <span class="radar-ring"></span>
       <span class="radar-ring"></span>
@@ -21,12 +23,130 @@
     </div>
     <p class="eyebrow">DEADLINERADAR</p>
     <h1>Know what will slip<br>before it does.</h1>
-    <p class="boot-copy">
-      The app shell is online. Authentication, task tracking, and the risk engine
-      arrive in the next commits.
-    </p>
-    <p class="boot-status"><span class="status-dot"></span> Scaffold healthy</p>
+
+    <form id="auth-form" class="card auth-card" novalidate>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab is-active" data-mode="login" role="tab">Sign in</button>
+        <button type="button" class="tab" data-mode="register" role="tab">Create account</button>
+      </div>
+      <label class="field" data-register-only hidden>
+        <span>Display name</span>
+        <input name="display_name" autocomplete="name" maxlength="60">
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input name="password" type="password" autocomplete="current-password" minlength="8" required>
+      </label>
+      <p class="form-error" id="auth-error" role="alert"></p>
+      <button class="btn btn-primary" type="submit" id="auth-submit">Sign in</button>
+    </form>
   </main>
+
+  <!-- Signed-in view -->
+  <div id="app-view" class="app-view" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="status-dot"></span> DeadlineRadar</div>
+      <input id="search" class="search" type="search" placeholder="Search tasks…" aria-label="Search tasks">
+      <select id="sort" aria-label="Sort tasks">
+        <option value="risk">Sort: risk</option>
+        <option value="due">Sort: due date</option>
+        <option value="priority">Sort: priority</option>
+        <option value="created">Sort: newest</option>
+      </select>
+      <button id="new-task" class="btn btn-primary" type="button">+ New task</button>
+      <span id="user-name" class="user-name"></span>
+      <button id="logout" class="btn btn-ghost" type="button">Sign out</button>
+    </header>
+
+    <div class="layout">
+      <nav class="views" id="views" aria-label="Task views">
+        <button data-view="all">All <span data-count="total"></span></button>
+        <button data-view="at-risk">At risk <span data-count="at_risk"></span></button>
+        <button data-view="today">Today <span data-count="today"></span></button>
+        <button data-view="upcoming">Upcoming <span data-count="upcoming"></span></button>
+        <button data-view="overdue">Overdue <span data-count="overdue"></span></button>
+        <button data-view="completed">Completed <span data-count="completed"></span></button>
+      </nav>
+
+      <main class="list-panel">
+        <p class="form-error" id="list-error" role="alert"></p>
+        <ul id="task-list" class="task-list"></ul>
+        <p id="empty" class="empty" hidden>Nothing on the radar here.</p>
+        <div class="pager" id="pager" hidden>
+          <button class="btn btn-ghost" id="prev" type="button">← Prev</button>
+          <span id="page-info"></span>
+          <button class="btn btn-ghost" id="next" type="button">Next →</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add / edit task -->
+  <dialog id="task-dialog" class="task-dialog">
+    <form id="task-form" novalidate>
+      <div class="dialog-grid">
+        <section>
+          <h2 id="dialog-title">New task</h2>
+          <label class="field">
+            <span>Title</span>
+            <input name="title" maxlength="200" required>
+          </label>
+          <label class="field">
+            <span>Description</span>
+            <textarea name="description" rows="3" maxlength="4000"></textarea>
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span>Category</span>
+              <select name="category">
+                <option value="work">Work</option>
+                <option value="study">Study</option>
+                <option value="personal">Personal</option>
+                <option value="health">Health</option>
+                <option value="finance">Finance</option>
+                <option value="home">Home</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Due date</span>
+              <input name="due_date" type="date">
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Effort (minutes)</span>
+              <input name="effort_minutes" type="number" min="5" max="10080" step="5" value="60">
+            </label>
+            <label class="field">
+              <span>Priority</span>
+              <select name="priority">
+                <option value="">Auto (from risk)</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </label>
+          </div>
+          <p class="form-error" id="task-error" role="alert"></p>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" type="button" id="cancel-task">Cancel</button>
+            <button class="btn btn-primary" type="submit">Save task</button>
+          </div>
+        </section>
+
+        <aside class="preview" aria-live="polite">
+          <p class="eyebrow">RISK PREVIEW</p>
+          <div id="preview-body" class="muted">Add a title and due date to see the risk.</div>
+        </aside>
+      </div>
+    </form>
+  </dialog>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -23,8 +23,10 @@ def test_create_task_defaults_and_shape(client, auth_headers):
     task = response.get_json()["task"]
     assert task["title"] == "Submit tax report"
     assert task["status"] == "pending"
-    assert task["priority"] == "MEDIUM"
     assert task["priority_source"] == "auto"
+    assert task["risk_score"] is not None
+    assert task["risk_band"] in {"low", "watch", "high", "critical"}
+    assert task["priority"] == task["predicted_priority"]
     assert task["effort_minutes"] == 90
     assert task["days_until_due"] == 2
     assert task["is_overdue"] is False
@@ -72,7 +74,7 @@ def test_list_views_and_counts(client, auth_headers):
         "today": 1,
         "upcoming": 1,
         "overdue": 1,
-        "at_risk": 0,
+        "at_risk": 3,  # finance tasks due today, tomorrow, and overdue all score high
     }
 
     today_titles = [t["title"] for t in client.get("/api/tasks?view=today").get_json()["tasks"]]
@@ -207,3 +209,38 @@ def test_tasks_are_isolated_per_user(client, auth_headers):
     )
     assert other_client.delete(f"/api/tasks/{task_id}", headers=other_headers).status_code == 404
     assert client.get(f"/api/tasks/{task_id}").status_code == 200
+
+
+def test_auto_priority_follows_risk_but_manual_priority_sticks(client, auth_headers):
+    headers = auth_headers()
+    urgent = create_task(
+        client, headers, title="Submit final exam project ASAP",
+        due_date=date.today().isoformat(), effort_minutes=600,
+    ).get_json()["task"]
+    relaxed = create_task(
+        client, headers, title="Maybe tidy shelf someday", category="home",
+        due_date=(date.today() + timedelta(days=60)).isoformat(), effort_minutes=15,
+    ).get_json()["task"]
+    assert urgent["risk_band"] in {"high", "critical"} and urgent["priority"] == "HIGH"
+    assert relaxed["risk_band"] == "low" and relaxed["priority"] == "LOW"
+
+    client.patch(f"/api/tasks/{urgent['id']}", json={"priority": "LOW"}, headers=headers)
+    task = client.get(f"/api/tasks/{urgent['id']}").get_json()["task"]
+    assert task["priority"] == "LOW" and task["predicted_priority"] == "HIGH"
+
+    at_risk = client.get("/api/tasks?view=at-risk").get_json()
+    assert [t["id"] for t in at_risk["tasks"]] == [urgent["id"]]
+
+
+def test_null_priority_returns_task_to_auto(client, auth_headers):
+    headers = auth_headers()
+    task = create_task(
+        client, headers, title="Submit final exam project ASAP",
+        due_date=date.today().isoformat(), effort_minutes=600, priority="LOW",
+    ).get_json()["task"]
+    assert task["priority"] == "LOW" and task["priority_source"] == "manual"
+
+    task = client.patch(
+        f"/api/tasks/{task['id']}", json={"priority": None}, headers=headers
+    ).get_json()["task"]
+    assert task["priority_source"] == "auto" and task["priority"] == "HIGH"

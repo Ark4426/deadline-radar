@@ -6,7 +6,7 @@ A clean-room, Flask + SQLite + vanilla JS task manager that predicts which deadl
 
 ## Status
 
-Scaffold in progress. The app is built in 22 incremental commits.
+Usable: accounts, task tracking with views/search/sort, risk scoring on every task, and a live risk preview with a rescue plan. Saved tasks are re-scored as their deadlines approach. The optional scikit-learn model (`backend/risk_engine/train.py`) is not wired in yet; scoring uses the rule engine.
 
 ## Configuration
 
