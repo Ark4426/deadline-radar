@@ -2,6 +2,8 @@
 
 A clean-room, Flask + SQLite + vanilla JS task manager that predicts which deadlines are at risk and turns the prediction into a rescue plan.
 
+**[⬇ Download DeadlineRadar.exe for Windows](https://github.com/Ark4426/deadline-radar/releases/latest/download/DeadlineRadar.exe)** · [all releases](https://github.com/Ark4426/deadline-radar/releases)
+
 > The core idea is inspired by smart task managers that auto-prioritize work. This implementation, product angle, UI, data model, and code are original.
 
 ## Status
@@ -10,7 +12,10 @@ Usable: accounts, task tracking with views/search/sort, risk scoring on every ta
 
 ## Download (Windows)
 
-Grab `DeadlineRadar.exe` from the [latest release](../../releases/latest) and double-click it. It opens the app in your browser at http://127.0.0.1:5000; close the console window to quit. Your data is stored in a `DeadlineRadar-data` folder next to the `.exe`, so keep it in a folder you can write to (e.g. Downloads, not Program Files). Windows SmartScreen may warn because the file is unsigned: choose **More info → Run anyway**.
+1. Download **[DeadlineRadar.exe](https://github.com/Ark4426/deadline-radar/releases/latest/download/DeadlineRadar.exe)** (always the newest version; older ones are on the [Releases page](https://github.com/Ark4426/deadline-radar/releases)).
+2. Double-click it.
+
+It opens the app in your browser at http://127.0.0.1:5000; close the console window to quit. Your data is stored in a `DeadlineRadar-data` folder next to the `.exe`, so keep it in a folder you can write to (e.g. Downloads, not Program Files). Windows SmartScreen may warn because the file is unsigned: choose **More info → Run anyway**.
 
 To publish a new release, bump the version and push a tag: `git tag v0.2.0 && git push origin v0.2.0`. The `release` workflow runs the tests, builds the `.exe`, smoke-tests it, and attaches it to a GitHub Release.
 
