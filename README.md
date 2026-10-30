@@ -8,6 +8,12 @@ A clean-room, Flask + SQLite + vanilla JS task manager that predicts which deadl
 
 Usable: accounts, task tracking with views/search/sort, risk scoring on every task, and a live risk preview with a rescue plan. Saved tasks are re-scored as their deadlines approach. The optional scikit-learn model (`backend/risk_engine/train.py`) is not wired in yet; scoring uses the rule engine.
 
+## Download (Windows)
+
+Grab `DeadlineRadar.exe` from the [latest release](../../releases/latest) and double-click it. It opens the app in your browser at http://127.0.0.1:5000; close the console window to quit. Your data is stored in a `DeadlineRadar-data` folder next to the `.exe`, so keep it in a folder you can write to (e.g. Downloads, not Program Files). Windows SmartScreen may warn because the file is unsigned: choose **More info → Run anyway**.
+
+To publish a new release, bump the version and push a tag: `git tag v0.2.0 && git push origin v0.2.0`. The `release` workflow runs the tests, builds the `.exe`, smoke-tests it, and attaches it to a GitHub Release.
+
 ## Configuration
 
 Copy `.env.example` to `.env` and set a real `SECRET_KEY`. Environment variables:

@@ -1,0 +1,38 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt pyinstaller
+      - run: python -m pytest -q
+      - name: Build exe
+        run: >
+          pyinstaller --onefile --name DeadlineRadar
+          --add-data "frontend;frontend"
+          --add-data "backend/schema.sql;backend"
+          desktop.py
+      - name: Smoke test exe
+        env:
+          DEADLINE_RADAR_NO_BROWSER: "1"
+        run: |
+          ./dist/DeadlineRadar.exe &
+          curl -fsS --retry 15 --retry-connrefused --retry-delay 2 http://127.0.0.1:5000/api/health
+          curl -fsS http://127.0.0.1:5000/ | grep -qi "<html"
+          taskkill //F //IM DeadlineRadar.exe
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/DeadlineRadar.exe --generate-notes
